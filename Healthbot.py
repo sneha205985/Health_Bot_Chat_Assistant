@@ -13,9 +13,30 @@ model = genai.GenerativeModel("models/gemini-1.5-flash")
 
 
 # Title
-st.title("WELCOME! HOPE YOU ARE DOING WELL.")
 st.markdown(
-    "<h2 style='color: red; font-size: 32px; font-weight: bold; font-family:Arial;'>HealthBot Chat Assistant</h2>",
+    "<div style='font-size: 37px; font-weight: bold; font-family: Arial;'>WELCOME! HOPE YOU ARE DOING WELL.</div>",
+    unsafe_allow_html=True
+)
+#st.markdown(
+#   "<div style='color: red; font-size: 32px; font-weight: bold; font-family:Arial;'>HealthBot Chat Assistant<div>",
+#   unsafe_allow_html=True
+#)
+st.markdown(
+    """
+    <style>
+        .top-left {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            font-size: 40px;
+            font-weight: bold;
+            color: red;
+            font-family: Arial;
+            z-index: 9999;
+        }
+    </style>
+    <div class="top-left">HealthBot Chat Assistant</div>
+    """,
     unsafe_allow_html=True
 )
 st.markdown("This HealthBot will help you identify diseases based on symptoms.")
