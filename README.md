@@ -70,10 +70,10 @@ streamlit run Healthbot.py
 
 ```
 healthbot-chat-assistant/
-‚îú‚îÄ‚îÄ Healthbot.py              # Main application file
-‚îú‚îÄ‚îÄ .env                      # Contains the Gemini API Key (excluded in .gitignore)
-‚îú‚îÄ‚îÄ requirements.txt          # python dependencies
-‚îî‚îÄ‚îÄ README.md                 # Project documentatiom 
+-----> Healthbot.py              # Main application file
+-----> .env                      # Contains the Gemini API Key (excluded in .gitignore)
+-----> requirements.txt          # python dependencies
+-----> README.md                 # Project documentatiom 
 ```
 
 ## License
