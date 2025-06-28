@@ -17,10 +17,10 @@ st.markdown(
     """
     <style>
         .top-left {
-            position: fixed;
+            position: relative;
             top: 15px;
             left: 15px;
-            font-size: 25px;
+            font-size: 28px;
             font-weight: bold;
             color: red;
             font-family: Arial;
