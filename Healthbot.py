@@ -16,8 +16,8 @@ model = genai.GenerativeModel("models/gemini-1.5-flash")
 st.markdown(
     """
     <style>
-        .top-left {
-            position: relative;
+       .top-left {
+            position: fixed;
             top: 15px;
             left: 15px;
             font-size: 28px;
@@ -76,6 +76,7 @@ else:
 user_query = st.chat_input("Ask your health-related question...")
 
 # === Step 3: Handle Input & Response ===
+# === Step 3: Handle Input & Response ===
 if user_query:
     if st.session_state.symptoms == "":
         bot_reply = "⚠️ Please enter the patient's symptoms first."
@@ -128,6 +129,33 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 """
 
+        elif "prevention" in user_query_lower:
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY suggest general prevention tips related to the suspected condition.
+Do NOT include disease names or medications.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        elif any(w in user_query_lower for w in ["diet", "nutrition"]):
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY suggest healthy diet and nutritional habits 
+that may help the user stay fit or recover better. Avoid giving any medicine names or diagnosis.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        elif "medicine" in user_query_lower or "medication" in user_query_lower:
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, provide some basic over-the-counter medications 
+that are commonly used, but always include a warning: "**If symptoms persist or worsen, consult a doctor.**"
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
         else:
             prompt = f"""
 You are a medical assistant. Help the user based on the symptoms and the query.
@@ -135,6 +163,7 @@ You are a medical assistant. Help the user based on the symptoms and the query.
 Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 """
+
 
         response = model.generate_content(prompt)
         bot_reply = response.text
