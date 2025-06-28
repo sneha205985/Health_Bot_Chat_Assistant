@@ -20,6 +20,9 @@ Try it here: [HealthBot Chat Assistant](https://healthbot-chat-assistant-tg.stre
   - Likely symptoms
   - Causes
   - Suggested remedies
+  - Basic medications
+  - Preventions
+  - Diet and Nutrition intake
   - Doctor consultation advice
 - Session history with user and assistant chat display
 - Reset conversation functionality
