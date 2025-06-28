@@ -12,15 +12,7 @@ genai.configure(api_key=api_key)
 model = genai.GenerativeModel("models/gemini-1.5-flash")
 
 
-# Title
-st.markdown(
-    "<div style='font-size: 37px; font-weight: bold; font-family: Arial;'>WELCOME! HOPE YOU ARE DOING WELL.</div>",
-    unsafe_allow_html=True
-)
-#st.markdown(
-#   "<div style='color: red; font-size: 32px; font-weight: bold; font-family:Arial;'>HealthBot Chat Assistant<div>",
-#   unsafe_allow_html=True
-#)
+# Fixed top-left red title 
 st.markdown(
     """
     <style>
@@ -39,9 +31,23 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.markdown("This HealthBot will help you identify diseases based on symptoms.")
-st.markdown("Just enter your symptoms below, and then ask health-related follow-up questions.")
-st.markdown("**Note:** This is for informational use only. Always consult a real doctor.")
+
+# Center-aligned welcome and intro
+st.markdown(
+    """
+    <div style='text-align: center;'>
+        <div style='font-size: 37px; font-weight: bold; font-family: Arial; margin-top: 60px;'>
+            WELCOME! HOPE YOU ARE DOING WELL.
+        </div>
+        <p style='font-size: 16px; font-family: Arial; margin-top: 20px;'>
+            This HealthBot will help you identify diseases based on symptoms.<br>
+            Just enter your symptoms below, and then ask health-related follow-up questions.<br><br>
+            <strong>Note:</strong> This is for informational use only. Always consult a real doctor.
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- Session state setup ---
 if "symptoms" not in st.session_state:
