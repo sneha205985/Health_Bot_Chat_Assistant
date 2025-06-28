@@ -20,7 +20,7 @@ st.markdown(
             position: fixed;
             top: 15px;
             left: 15px;
-            font-size: 40px;
+            font-size: 25px;
             font-weight: bold;
             color: red;
             font-family: Arial;
@@ -31,6 +31,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 # Center-aligned welcome and intro
 st.markdown(
@@ -74,33 +75,73 @@ else:
 # --- Step 2: Follow-up Chat Input ---
 user_query = st.chat_input("Ask your health-related question...")
 
-# --- Step 3: Handle Input & Response ---
+# === Step 3: Handle Input & Response ===
 if user_query:
     if st.session_state.symptoms == "":
         bot_reply = "⚠️ Please enter the patient's symptoms first."
     else:
-        # Prepare structured context prompt
-        context = f"""
-You are a medical assistant AI that analyzes symptoms and suggests possible diseases.
+        user_query_lower = user_query.lower()
+        prompt = ""
+
+        if "disease" in user_query_lower and not any(w in user_query_lower for w in ["cure", "remedy", "treatment"]):
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY predict the most likely disease(s).
+DO NOT include causes, remedies, or any other information.
 
 Symptoms: {st.session_state.symptoms}
-User question: {user_query}
-
-Please reply in the following structured format:
-**Possible Disease**: ...
-**Likely Symptoms**: ...
-**Cause**: ...
-**Suggested Remedies**: ...
-**Doctor Consultation Advice**: ...
-
-Avoid giving prescriptions or dosage instructions. Keep it informative and friendly.
+User Question: {user_query}
 """
-        response = model.generate_content(context)
+
+        elif any(w in user_query_lower for w in ["cure", "remedy", "treatment"]):
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY provide remedies, treatments, or cures.
+DO NOT mention disease names unless asked.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        elif "symptom" in user_query_lower:
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY explain the likely symptoms or how they relate.
+DO NOT include disease name, remedies, or causes.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        elif "cause" in user_query_lower:
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY describe the possible causes of the condition.
+DO NOT include symptoms, disease name, or remedies.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        elif "doctor" in user_query_lower or "consult" in user_query_lower:
+            prompt = f"""
+You are a medical assistant. Based on the symptoms below, ONLY provide doctor consultation advice.
+DO NOT include disease name, causes, or remedies.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        else:
+            prompt = f"""
+You are a medical assistant. Help the user based on the symptoms and the query.
+
+Symptoms: {st.session_state.symptoms}
+User Question: {user_query}
+"""
+
+        response = model.generate_content(prompt)
         bot_reply = response.text
 
-    # Save to history
-    st.session_state.chat_history.append(("user", user_query))
-    st.session_state.chat_history.append(("assistant", bot_reply))
+        # Save to history
+        st.session_state.chat_history.append(("user", user_query))
+        st.session_state.chat_history.append(("assistant", bot_reply))
 
 # --- Display Chat History ---
 for role, message in st.session_state.chat_history:
