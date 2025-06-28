@@ -1,5 +1,10 @@
 # **HealthBot Chat Assistant**
 
+
+## **🔗 Live Demo**
+
+Try it here: [HealthBot Chat Assistant](https://healthbot-chat-assistant.streamlit.app)
+
 ## Overview
 
 **HealthBot Chat Assistant** is a Streamlit-based AI chatbot that helps users identify potential illnesses by analyzing entered symptoms and follow-up health-related questions. This project uses Google's Gemini Pro (Generative AI) to provide contextual and memory-aware responses.
