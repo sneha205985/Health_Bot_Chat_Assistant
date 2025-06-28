@@ -3,7 +3,7 @@
 
 ## **🔗 Live Demo**
 
-Try it here: [HealthBot Chat Assistant](https://healthbot-chat-assistant.streamlit.app)
+Try it here: [HealthBot Chat Assistant](https://healthbot-chat-assistant-tg.streamlit.app)
 
 ## Overview
 
