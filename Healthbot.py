@@ -44,7 +44,8 @@ if api_key:
         genai.configure(api_key=api_key)
         # Try model names in order of preference (most compatible first)
         # Note: "gemini-pro" is the most widely available model
-        model_names = ["gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
+                # Use current Gemini 1.5 models only
+        model_names = ["gemini-1.5-flash", "gemini-1.5-pro"]
         model = None
         last_error = None
         
@@ -404,15 +405,13 @@ Provide a helpful, professional response."""
                     except Exception as gen_error:
                         # If model fails, try to reinitialize with a different model
                         error_str = str(gen_error)
-                        if "404" in error_str or "not found" in error_str.lower():
+                        
                             # Try to use gemini-pro as fallback
-                            try:
-                                fallback_model = genai.GenerativeModel("gemini-pro")
-                                response = fallback_model.generate_content(prompt)
-                                bot_reply = response.text
-                            except:
-                                raise gen_error
-                        else:
+                        try:
+                            fallback_model = genai.GenerativeModel("gemini-1.5-flash")
+                            response = fallback_model.generate_content(prompt)
+                            bot_reply = response.text
+                        except:
                             raise gen_error
                     
                     # Save to history
