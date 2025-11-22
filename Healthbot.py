@@ -12,34 +12,61 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load API key from .env file
-load_dotenv()
-# Support both GOOGLE_API_KEY and GEMINI_API_KEY for flexibility
-api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+# Load API key - try Streamlit secrets first (for Cloud), then .env file
+api_key = None
+
+# Try Streamlit secrets first (for deployed apps)
+try:
+    if "secrets" in dir(st) and hasattr(st, "secrets"):
+        api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
+        # Also check if it's nested under [general]
+        if not api_key:
+            try:
+                api_key = st.secrets.get("general", {}).get("GEMINI_API_KEY") or st.secrets.get("general", {}).get("GOOGLE_API_KEY")
+            except:
+                pass
+except:
+    pass
+
+# If not in secrets, try .env file
+if not api_key:
+    load_dotenv()
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+
+# Strip quotes and whitespace from API key if present
+if api_key:
+    api_key = api_key.strip().strip('"').strip("'")
 
 # Initialize Gemini model with error handling
 model = None
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # Try different model names for compatibility (without "models/" prefix)
-        model_names = ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-pro", "gemini-1.0-pro"]
+        # Try model names in order of preference (most compatible first)
+        # Note: "gemini-pro" is the most widely available model
+        model_names = ["gemini-pro", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
         model = None
+        last_error = None
+        
         for model_name in model_names:
             try:
                 model = genai.GenerativeModel(model_name)
-                # Test if model works by checking if it's accessible
+                # Try a simple test to verify the model works
+                test_response = model.generate_content("test")
+                # If we get here, the model works
                 break
             except Exception as e:
+                last_error = str(e)
+                model = None
                 continue
         
         if model is None:
-            raise Exception("Could not initialize any Gemini model. Please check your API key and model availability.")
+            raise Exception(f"Could not initialize any Gemini model. Last error: {last_error}. Please check your API key and model availability.")
     except Exception as e:
         st.error(f"Error initializing AI model: {str(e)}")
         model = None
 else:
-    st.error("⚠️ API key not found. Please set GOOGLE_API_KEY or GEMINI_API_KEY in your .env file or environment variables.")
+    st.error("⚠️ API key not found. Please set GEMINI_API_KEY or GOOGLE_API_KEY in Streamlit Cloud Secrets or .env file.")
 
 # Custom CSS styling for better visibility
 st.markdown(
@@ -360,8 +387,22 @@ User Question: {user_query}
 Provide a helpful, professional response."""
                     
                     # Generate response
-                    response = model.generate_content(prompt)
-                    bot_reply = response.text
+                    try:
+                        response = model.generate_content(prompt)
+                        bot_reply = response.text
+                    except Exception as gen_error:
+                        # If model fails, try to reinitialize with a different model
+                        error_str = str(gen_error)
+                        if "404" in error_str or "not found" in error_str.lower():
+                            # Try to use gemini-pro as fallback
+                            try:
+                                fallback_model = genai.GenerativeModel("gemini-pro")
+                                response = fallback_model.generate_content(prompt)
+                                bot_reply = response.text
+                            except:
+                                raise gen_error
+                        else:
+                            raise gen_error
                     
                     # Save to history
                     st.session_state.chat_history.append(("user", user_query))
