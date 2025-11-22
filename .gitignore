@@ -42,6 +42,7 @@ env/
 .DS_Store
 Thumbs.db
 
-# Streamlit
-.streamlit/
+# Streamlit (but allow config.toml)
+.streamlit/*
+!.streamlit/config.toml
 
