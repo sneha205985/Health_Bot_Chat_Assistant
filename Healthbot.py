@@ -17,15 +17,26 @@ api_key = None
 
 # Try Streamlit secrets first (for deployed apps)
 try:
-    if "secrets" in dir(st) and hasattr(st, "secrets"):
-        api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
-        # Also check if it's nested under [general]
+    if hasattr(st, "secrets"):
+        # Try direct access first
+        try:
+            api_key = st.secrets["GEMINI_API_KEY"]
+        except KeyError:
+            try:
+                api_key = st.secrets["GOOGLE_API_KEY"]
+            except KeyError:
+                pass
+        
+        # Also check if it's nested under [general] section
         if not api_key:
             try:
-                api_key = st.secrets.get("general", {}).get("GEMINI_API_KEY") or st.secrets.get("general", {}).get("GOOGLE_API_KEY")
-            except:
-                pass
-except:
+                api_key = st.secrets["general"]["GEMINI_API_KEY"]
+            except (KeyError, TypeError):
+                try:
+                    api_key = st.secrets["general"]["GOOGLE_API_KEY"]
+                except (KeyError, TypeError):
+                    pass
+except Exception:
     pass
 
 # If not in secrets, try .env file
@@ -33,9 +44,9 @@ if not api_key:
     load_dotenv()
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 
-# Strip quotes and whitespace from API key if present
+# Strip quotes and whitespace from API key if present (TOML format includes quotes)
 if api_key:
-    api_key = api_key.strip().strip('"').strip("'")
+    api_key = str(api_key).strip().strip('"').strip("'")
 
 # Initialize Gemini model with error handling
 model = None
