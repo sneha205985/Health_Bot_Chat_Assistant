@@ -44,14 +44,55 @@ if api_key:
     api_key = str(api_key).strip().strip('"').strip("'")
 
 # -------------------------------------------------------
-# Initialize Gemini model with error handling
+# Initialize Gemini model with error handling (UPDATED)
 # -------------------------------------------------------
 model = None
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # Use a single, current Gemini 1.5 model
-        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        # Debug: show SDK version
+        st.write("google-generativeai version:", genai.__version__)
+
+        # Get all models that support generateContent for this key
+        available_models = [
+            m for m in genai.list_models()
+            if "generateContent" in getattr(m, "supported_generation_methods", [])
+        ]
+        available_names = {m.name for m in available_models}
+
+        # Debug: show what models this key can see
+        st.write("Available models for this key:", list(available_names))
+
+        # Prefer these models in order if they are available
+        preferred_order = [
+            "models/gemini-1.5-flash",
+            "models/gemini-1.5-flash-latest",
+            "models/gemini-1.5-pro",
+            "models/gemini-1.0-pro",
+            "models/gemini-pro",
+        ]
+
+        chosen_name = None
+        for candidate in preferred_order:
+            if candidate in available_names:
+                chosen_name = candidate
+                break
+
+        # If none of the preferred ones exist, fall back to any text-capable model
+        if not chosen_name and available_models:
+            chosen_name = available_models[0].name
+
+        if not chosen_name:
+            raise Exception(
+                "No suitable models with generateContent are available for this API key."
+            )
+
+        # Debug: show the final choice
+        st.write("Using model:", chosen_name)
+
+        model = genai.GenerativeModel(chosen_name)
+
     except Exception as e:
         st.error(f"Error initializing AI model: {str(e)}")
         model = None
