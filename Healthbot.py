@@ -4,7 +4,9 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from typing import Optional
 
+# -------------------------------------------------------
 # Page configuration
+# -------------------------------------------------------
 st.set_page_config(
     page_title="HealthBot Chat Assistant",
     page_icon="🏥",
@@ -12,19 +14,23 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Load API key - try Streamlit secrets first (for Cloud), then .env file
+# -------------------------------------------------------
+# Load API key - Streamlit secrets (Cloud) → .env (local)
+# -------------------------------------------------------
 api_key = None
 
 # Try Streamlit secrets first (for deployed apps)
 try:
     if hasattr(st, "secrets") and st.secrets:
-        # Try direct access using get() method (safer)
         api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
-        
+
         # Also check if it's nested under [general] section
         if not api_key and "general" in st.secrets:
-            api_key = st.secrets["general"].get("GEMINI_API_KEY") or st.secrets["general"].get("GOOGLE_API_KEY")
-except Exception as e:
+            api_key = (
+                st.secrets["general"].get("GEMINI_API_KEY")
+                or st.secrets["general"].get("GOOGLE_API_KEY")
+            )
+except Exception:
     # Silently fail and try .env file
     pass
 
@@ -37,38 +43,23 @@ if not api_key:
 if api_key:
     api_key = str(api_key).strip().strip('"').strip("'")
 
+# -------------------------------------------------------
 # Initialize Gemini model with error handling
+# -------------------------------------------------------
 model = None
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        # Try model names in order of preference (most compatible first)
-        # Note: "gemini-pro" is the most widely available model
-                # Use current Gemini 1.5 models only
-        model_names = ["gemini-1.5-flash", "gemini-1.5-pro"]
-        model = None
-        last_error = None
-        
-        for model_name in model_names:
-            try:
-                # Just create the model, don't test it yet (testing will happen on first use)
-                model = genai.GenerativeModel(model_name)
-                # If we get here without error, the model is initialized
-                break
-            except Exception as e:
-                last_error = str(e)
-                model = None
-                continue
-        
-        if model is None:
-            raise Exception(f"Could not initialize any Gemini model. Last error: {last_error}. Please check your API key and model availability.")
+        # Use a single, current Gemini 1.5 model
+        model = genai.GenerativeModel("gemini-1.5-flash")
     except Exception as e:
         st.error(f"Error initializing AI model: {str(e)}")
         model = None
 else:
     # Show helpful error message
     st.error("⚠️ **API key not found.**")
-    st.info("""
+    st.info(
+        """
     **To fix this in Streamlit Cloud:**
     1. Go to your app settings → **Secrets**
     2. Add your API key in TOML format:
@@ -78,9 +69,12 @@ else:
     3. Make sure to use quotes around the key value
     4. Click **Save changes**
     5. Wait 1-2 minutes for the app to redeploy
-    """)
+    """
+    )
 
+# -------------------------------------------------------
 # Custom CSS styling for better visibility
+# -------------------------------------------------------
 st.markdown(
     """
     <style>
@@ -241,7 +235,9 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# Center-aligned welcome and intro
+# -------------------------------------------------------
+# Intro header
+# -------------------------------------------------------
 st.markdown(
     """
     <div style='text-align: center;'>
@@ -261,20 +257,24 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# --- Session state setup ---
+# -------------------------------------------------------
+# Session state setup
+# -------------------------------------------------------
 if "symptoms" not in st.session_state:
     st.session_state.symptoms = ""
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# --- Step 1: Enter Patient Symptoms ---
+# -------------------------------------------------------
+# Step 1: Enter Patient Symptoms
+# -------------------------------------------------------
 st.markdown("---")
 with st.expander("📝 Enter Patient's Symptoms", expanded=not st.session_state.symptoms):
     symptoms_input = st.text_input(
         "Enter symptoms (e.g., fever, sore throat, fatigue, headache)",
         key="symptom_input",
         value=st.session_state.symptoms if st.session_state.symptoms else "",
-        placeholder="Example: fever, sore throat, fatigue"
+        placeholder="Example: fever, sore throat, fatigue",
     )
     col1, col2 = st.columns([1, 4])
     with col1:
@@ -295,18 +295,24 @@ with st.expander("📝 Enter Patient's Symptoms", expanded=not st.session_state.
 # Show message to proceed
 st.markdown("---")
 if st.session_state.symptoms:
-    st.info(f"✅ **Symptoms received:** {st.session_state.symptoms}\n\n**You can now ask your health-related questions below:**")
+    st.info(
+        f"✅ **Symptoms received:** {st.session_state.symptoms}\n\n**You can now ask your health-related questions below:**"
+    )
 else:
     st.warning("⚠️ Please enter patient's symptoms above to begin diagnosis.")
 
-# --- Step 2: Follow-up Chat Input ---
+# -------------------------------------------------------
+# Step 2: Follow-up Chat Input
+# -------------------------------------------------------
 if model:  # Only show chat input if model is initialized
     user_query = st.chat_input("Ask your health-related question...")
-    
+
     # === Step 3: Handle Input & Response ===
     if user_query:
         if not st.session_state.symptoms:
-            bot_reply = "⚠️ Please enter the patient's symptoms first using the form above."
+            bot_reply = (
+                "⚠️ Please enter the patient's symptoms first using the form above."
+            )
             st.session_state.chat_history.append(("user", user_query))
             st.session_state.chat_history.append(("assistant", bot_reply))
         else:
@@ -315,9 +321,12 @@ if model:  # Only show chat input if model is initialized
                 try:
                     user_query_lower = user_query.lower()
                     prompt = ""
-                    
+
                     # Determine prompt based on query type
-                    if "disease" in user_query_lower and not any(w in user_query_lower for w in ["cure", "remedy", "treatment"]):
+                    if "disease" in user_query_lower and not any(
+                        w in user_query_lower
+                        for w in ["cure", "remedy", "treatment"]
+                    ):
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY predict the most likely disease(s) or condition(s).
 DO NOT include causes, remedies, treatments, or any other information. Be concise and professional.
 
@@ -325,8 +334,11 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide a clear, professional response about the possible disease(s)."""
-                    
-                    elif any(w in user_query_lower for w in ["cure", "remedy", "treatment"]):
+
+                    elif any(
+                        w in user_query_lower
+                        for w in ["cure", "remedy", "treatment"]
+                    ):
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY provide remedies, treatments, or cures.
 DO NOT mention disease names unless asked. Always remind the user to consult a doctor for serious conditions.
 
@@ -334,7 +346,7 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide helpful treatment suggestions while emphasizing the importance of professional medical consultation."""
-                    
+
                     elif "symptom" in user_query_lower:
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY explain the likely symptoms or how they relate to each other.
 DO NOT include disease name, remedies, or causes.
@@ -343,7 +355,7 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide a clear explanation of the symptoms."""
-                    
+
                     elif "cause" in user_query_lower:
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY describe the possible causes of the condition.
 DO NOT include symptoms, disease name, or remedies.
@@ -352,7 +364,7 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide information about potential causes."""
-                    
+
                     elif "doctor" in user_query_lower or "consult" in user_query_lower:
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, provide doctor consultation advice.
 Explain when it's important to see a doctor and what type of specialist might be appropriate.
@@ -361,7 +373,7 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide professional consultation advice."""
-                    
+
                     elif "prevention" in user_query_lower:
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY suggest general prevention tips related to the suspected condition.
 Do NOT include disease names or specific medications.
@@ -370,8 +382,10 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide helpful prevention tips."""
-                    
-                    elif any(w in user_query_lower for w in ["diet", "nutrition", "food"]):
+
+                    elif any(
+                        w in user_query_lower for w in ["diet", "nutrition", "food"]
+                    ):
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, ONLY suggest healthy diet and nutritional habits 
 that may help the user stay fit or recover better. Avoid giving any medicine names or diagnosis.
 
@@ -379,8 +393,12 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide dietary and nutritional advice."""
-                    
-                    elif "medicine" in user_query_lower or "medication" in user_query_lower or "drug" in user_query_lower:
+
+                    elif (
+                        "medicine" in user_query_lower
+                        or "medication" in user_query_lower
+                        or "drug" in user_query_lower
+                    ):
                         prompt = f"""You are a professional medical assistant. Based on the symptoms below, provide some basic over-the-counter medications 
 that are commonly used, but ALWAYS include a strong warning: "**⚠️ IMPORTANT: If symptoms persist or worsen, consult a doctor immediately. Do not self-medicate for serious conditions.**"
 
@@ -388,7 +406,7 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide medication information with appropriate warnings."""
-                    
+
                     else:
                         prompt = f"""You are a professional medical assistant. Help the user based on the symptoms and their query.
 Always remind them that this is for informational purposes only and they should consult a doctor for proper diagnosis.
@@ -397,33 +415,32 @@ Symptoms: {st.session_state.symptoms}
 User Question: {user_query}
 
 Provide a helpful, professional response."""
-                    
+
                     # Generate response
                     try:
                         response = model.generate_content(prompt)
                         bot_reply = response.text
                     except Exception as gen_error:
-                        # If model fails, try to reinitialize with a different model
-                        error_str = str(gen_error)
-                        
-                            # Try to use gemini-pro as fallback
-                        try:
-                            fallback_model = genai.GenerativeModel("gemini-1.5-flash")
-                            response = fallback_model.generate_content(prompt)
-                            bot_reply = response.text
-                        except:
-                            raise gen_error
-                    
+                        error_msg = (
+                            f"❌ Error generating response: {str(gen_error)}\n\n"
+                            "Please try again or check your API key."
+                        )
+                        st.error(error_msg)
+                        bot_reply = error_msg
+
                     # Save to history
                     st.session_state.chat_history.append(("user", user_query))
                     st.session_state.chat_history.append(("assistant", bot_reply))
-                    
+
                 except Exception as e:
-                    error_msg = f"❌ Error generating response: {str(e)}\n\nPlease try again or check your API key."
+                    error_msg = (
+                        f"❌ Error generating response: {str(e)}\n\n"
+                        "Please try again or check your API key."
+                    )
                     st.error(error_msg)
                     st.session_state.chat_history.append(("user", user_query))
                     st.session_state.chat_history.append(("assistant", error_msg))
-    
+
     # --- Display Chat History ---
     if st.session_state.chat_history:
         st.markdown("### 💬 Conversation History")
@@ -434,7 +451,7 @@ Provide a helpful, professional response."""
             else:
                 with st.chat_message("assistant"):
                     st.markdown(message)
-    
+
     # --- Reset Button ---
     st.markdown("---")
     if st.button("🔄 Reset Conversation", type="secondary"):
@@ -443,16 +460,22 @@ Provide a helpful, professional response."""
         st.success("✅ Chat reset successfully. You can enter new symptoms.")
         st.rerun()
 else:
-    st.error("**Cannot proceed:** AI model is not initialized. Please check your API key configuration.")
-    st.info("""
+    st.error(
+        "**Cannot proceed:** AI model is not initialized. Please check your API key configuration."
+    )
+    st.info(
+        """
     **To fix this:**
     1. Create a `.env` file in the project root
     2. Add your Google API key: `GEMINI_API_KEY=your_key_here` or `GOOGLE_API_KEY=your_key_here`
     3. Or set it as an environment variable
     4. Restart the Streamlit app
-    """)
+    """
+    )
 
+# -------------------------------------------------------
 # Footer
+# -------------------------------------------------------
 st.markdown("---")
 st.markdown(
     """
