@@ -51,8 +51,8 @@ if api_key:
     try:
         genai.configure(api_key=api_key)
 
-        # Debug: show SDK version
-        st.write("google-generativeai version:", genai.__version__)
+        # (Optional debug - uncomment if you want to see this in the app)
+        # st.write("google-generativeai version:", genai.__version__)
 
         # Get all models that support generateContent for this key
         available_models = [
@@ -61,16 +61,18 @@ if api_key:
         ]
         available_names = {m.name for m in available_models}
 
-        # Debug: show what models this key can see
-        st.write("Available models for this key:", list(available_names))
+        # (Optional debug - uncomment if needed)
+        # st.write("Available models for this key:", list(available_names))
 
-        # Prefer these models in order if they are available
+        # Prefer these *new* Gemini models in order if they are available
         preferred_order = [
-            "models/gemini-1.5-flash",
-            "models/gemini-1.5-flash-latest",
-            "models/gemini-1.5-pro",
-            "models/gemini-1.0-pro",
-            "models/gemini-pro",
+            "models/gemini-2.5-pro",                  # main strong model
+            "models/gemini-2.5-pro-preview-03-25",    # you already saw this available
+            "models/gemini-2.5-flash",                # faster, cheaper
+            "models/gemini-flash-latest",
+            "models/gemini-2.0-flash",
+            "models/gemini-2.0-flash-001",
+            "models/gemini-pro-latest",
         ]
 
         chosen_name = None
@@ -88,8 +90,8 @@ if api_key:
                 "No suitable models with generateContent are available for this API key."
             )
 
-        # Debug: show the final choice
-        st.write("Using model:", chosen_name)
+        # (Optional debug)
+        # st.write("Using model:", chosen_name)
 
         model = genai.GenerativeModel(chosen_name)
 
