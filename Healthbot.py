@@ -22,56 +22,179 @@ model = None
 if api_key:
     try:
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        # Try different model names for compatibility (without "models/" prefix)
+        model_names = ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-pro", "gemini-1.0-pro"]
+        model = None
+        for model_name in model_names:
+            try:
+                model = genai.GenerativeModel(model_name)
+                # Test if model works by checking if it's accessible
+                break
+            except Exception as e:
+                continue
+        
+        if model is None:
+            raise Exception("Could not initialize any Gemini model. Please check your API key and model availability.")
     except Exception as e:
         st.error(f"Error initializing AI model: {str(e)}")
         model = None
 else:
     st.error("⚠️ API key not found. Please set GOOGLE_API_KEY or GEMINI_API_KEY in your .env file or environment variables.")
 
-# Custom CSS styling
+# Custom CSS styling for better visibility
 st.markdown(
     """
     <style>
+        /* Main container background */
+        .main .block-container {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        
+        /* Top left badge */
         .top-left {
             position: fixed;
             top: 15px;
             left: 15px;
             font-size: 18px;
             font-weight: bold;
-            color: #FF4444;
+            color: #FFFFFF;
+            background: linear-gradient(135deg, #FF6B6B 0%, #EE5A6F 100%);
             font-family: Arial, sans-serif;
             z-index: 9999;
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 8px 12px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 10px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
+        
+        /* Main header - bright and visible */
         .main-header {
             text-align: center;
-            font-size: 37px;
+            font-size: 42px;
             font-weight: bold;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             margin-top: 60px;
-            color: #2C3E50;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.5);
         }
+        
+        /* Intro text - high contrast */
         .intro-text {
-            font-size: 16px;
-            font-family: Arial, sans-serif;
+            font-size: 18px;
+            font-family: 'Segoe UI', Arial, sans-serif;
             margin-top: 20px;
-            color: #34495E;
-            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #E0E0E0;
+            line-height: 1.8;
+            text-align: center;
         }
+        
+        /* Disclaimer box - bright and attention-grabbing */
         .disclaimer {
-            background-color: #FFF3CD;
-            border-left: 4px solid #FFC107;
-            padding: 12px;
-            margin: 20px 0;
-            border-radius: 4px;
+            background: linear-gradient(135deg, #FFD93D 0%, #FFB347 100%);
+            border-left: 5px solid #FF6B00;
+            padding: 16px 20px;
+            margin: 25px auto;
+            border-radius: 8px;
+            max-width: 800px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            color: #1A1A1A;
+            font-weight: 500;
         }
+        
+        .disclaimer strong {
+            color: #D32F2F;
+            font-size: 1.1em;
+        }
+        
+        /* Buttons */
         .stButton>button {
             width: 100%;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .stButton>button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* Text inputs */
+        .stTextInput>div>div>input {
+            background-color: #262730;
+            color: #FAFAFA;
+            border: 2px solid #3A3F4B;
+        }
+        
+        .stTextInput>div>div>input:focus {
+            border-color: #FF6B6B;
+        }
+        
+        /* Chat messages */
+        .stChatMessage {
+            background-color: #1E1E2E;
+        }
+        
+        /* Info and warning boxes */
+        .stInfo {
+            background-color: #1E3A5F;
+            border-left: 4px solid #4A90E2;
+            color: #E3F2FD;
+        }
+        
+        .stWarning {
+            background-color: #5D4037;
+            border-left: 4px solid #FF9800;
+            color: #FFF3E0;
+        }
+        
+        .stSuccess {
+            background-color: #1B5E20;
+            border-left: 4px solid #4CAF50;
+            color: #E8F5E9;
+        }
+        
+        .stError {
+            background-color: #B71C1C;
+            border-left: 4px solid #F44336;
+            color: #FFEBEE;
+        }
+        
+        /* Expander */
+        .streamlit-expanderHeader {
+            background-color: #262730;
+            color: #FAFAFA;
+            font-weight: 600;
+        }
+        
+        /* Markdown text */
+        .stMarkdown {
+            color: #FAFAFA;
+        }
+        
+        /* Footer */
+        .footer-text {
+            color: #B0B0B0 !important;
+            font-size: 13px;
+        }
+        
+        /* Improve overall text visibility */
+        p, li, div {
+            color: #E0E0E0;
+        }
+        
+        h1, h2, h3 {
+            color: #FFFFFF;
+        }
+        
+        /* Code blocks */
+        code {
+            background-color: #1E1E2E;
+            color: #A8E6CF;
+            padding: 2px 6px;
+            border-radius: 4px;
         }
     </style>
     <div class="top-left">🏥 HealthBot Chat Assistant</div>
@@ -282,9 +405,9 @@ else:
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: center; color: #7F8C8D; font-size: 12px; padding: 20px;'>
-        <p>HealthBot Chat Assistant | Built with Streamlit & Google Gemini AI</p>
-        <p><strong>Remember:</strong> This tool is for informational purposes only. Always consult a qualified healthcare professional.</p>
+    <div class="footer-text" style='text-align: center; font-size: 13px; padding: 20px;'>
+        <p style='color: #B0B0B0;'>HealthBot Chat Assistant | Built with Streamlit & Google Gemini AI</p>
+        <p style='color: #B0B0B0;'><strong style='color: #FF6B6B;'>Remember:</strong> This tool is for informational purposes only. Always consult a qualified healthcare professional.</p>
     </div>
     """,
     unsafe_allow_html=True
