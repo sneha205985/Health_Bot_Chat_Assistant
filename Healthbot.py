@@ -17,26 +17,15 @@ api_key = None
 
 # Try Streamlit secrets first (for deployed apps)
 try:
-    if hasattr(st, "secrets"):
-        # Try direct access first
-        try:
-            api_key = st.secrets["GEMINI_API_KEY"]
-        except KeyError:
-            try:
-                api_key = st.secrets["GOOGLE_API_KEY"]
-            except KeyError:
-                pass
+    if hasattr(st, "secrets") and st.secrets:
+        # Try direct access using get() method (safer)
+        api_key = st.secrets.get("GEMINI_API_KEY") or st.secrets.get("GOOGLE_API_KEY")
         
         # Also check if it's nested under [general] section
-        if not api_key:
-            try:
-                api_key = st.secrets["general"]["GEMINI_API_KEY"]
-            except (KeyError, TypeError):
-                try:
-                    api_key = st.secrets["general"]["GOOGLE_API_KEY"]
-                except (KeyError, TypeError):
-                    pass
-except Exception:
+        if not api_key and "general" in st.secrets:
+            api_key = st.secrets["general"].get("GEMINI_API_KEY") or st.secrets["general"].get("GOOGLE_API_KEY")
+except Exception as e:
+    # Silently fail and try .env file
     pass
 
 # If not in secrets, try .env file
@@ -61,10 +50,9 @@ if api_key:
         
         for model_name in model_names:
             try:
+                # Just create the model, don't test it yet (testing will happen on first use)
                 model = genai.GenerativeModel(model_name)
-                # Try a simple test to verify the model works
-                test_response = model.generate_content("test")
-                # If we get here, the model works
+                # If we get here without error, the model is initialized
                 break
             except Exception as e:
                 last_error = str(e)
@@ -77,7 +65,19 @@ if api_key:
         st.error(f"Error initializing AI model: {str(e)}")
         model = None
 else:
-    st.error("⚠️ API key not found. Please set GEMINI_API_KEY or GOOGLE_API_KEY in Streamlit Cloud Secrets or .env file.")
+    # Show helpful error message
+    st.error("⚠️ **API key not found.**")
+    st.info("""
+    **To fix this in Streamlit Cloud:**
+    1. Go to your app settings → **Secrets**
+    2. Add your API key in TOML format:
+       ```
+       GEMINI_API_KEY = "your_api_key_here"
+       ```
+    3. Make sure to use quotes around the key value
+    4. Click **Save changes**
+    5. Wait 1-2 minutes for the app to redeploy
+    """)
 
 # Custom CSS styling for better visibility
 st.markdown(
