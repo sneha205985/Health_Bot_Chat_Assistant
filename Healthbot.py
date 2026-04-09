@@ -64,11 +64,11 @@ if api_key:
         # (Optional debug - uncomment if needed)
         # st.write("Available models for this key:", list(available_names))
 
-        # Prefer these *new* Gemini models in order if they are available
+        
         preferred_order = [
             "models/gemini-1.5-flash",
             "models/gemini-2.5-pro",                  # main strong model
-            "models/gemini-2.5-pro-preview-03-25",    # you already saw this available
+            "models/gemini-2.5-pro-preview-03-25",    
             "models/gemini-2.5-flash",                # faster, cheaper
             "models/gemini-flash-latest",
             "models/gemini-2.0-flash",
